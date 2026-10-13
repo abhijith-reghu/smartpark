@@ -84,12 +84,14 @@
 <body>
 
     <div class="header">
-        <h1>SmartPark Staff Panel</h1>
-        <p class="subtitle">Tap a slot to toggle its status</p>
-        <button onclick="logout()" style=" position:absolute; top:12px; right:12px; padding:8px 20px; 
-        background:#1e293b; color:#f87171; border:1px solid #f87171; 
-        border-radius:20px; cursor:pointer; font-size:13px;">Logout</button>
+    <div style="display:flex; justify-content:right; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <a href="/dashboard" style="padding:8px 20px; background:#1e293b; color:#60a5fa; border:1px solid #60a5fa; border-radius:20px; font-size:13px; text-decoration:none;">Dashboard</a>
+        <a href="/entrance-display" style="padding:8px 20px; background:#1e293b; color:#4ade80; border:1px solid #4ade80; border-radius:20px; font-size:13px; text-decoration:none;">Entrance Display</a>
+        <a href="#" onclick="logout(); return false;" style="padding:8px 20px; background:#1e293b; color:#f87171; border:1px solid #f87171; border-radius:20px; font-size:13px; text-decoration:none;">Logout</a>
     </div>
+    <h1>SmartPark Staff Panel</h1>
+    <p class="subtitle">Tap a slot to toggle its status</p>
+</div>
 
     <div class="container">
         <div id="sections"></div>
