@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartPark - Entrance Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .display-box {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 24px;
+            padding: 40px 60px;
+            text-align: center;
+            width: 380px;
+        }
+        .logo-label {
+            font-size: 13px;
+            color: #60a5fa;
+            letter-spacing: 2px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .label {
+            font-size: 13px;
+            color: #94a3b8;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+        }
+        .slot-code {
+            font-size: 70px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin: 0 0 20px 0;
+        }
+        .direction-box {
+            background-color: #1e293b;
+            border: 1px solid #3b82f6;
+            border-radius: 20px;
+            padding: 15px 30px;
+            display: inline-block;
+            font-size: 20px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 25px;
+        }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid #334155;
+            padding-top: 20px;
+            margin-top: 10px;
+        }
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            margin: 0;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #94a3b8;
+            margin: 4px 0 0;
+            text-transform: uppercase;
+        }
+        .updated-time {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 18px;
+        }
+        .full-message {
+            font-size: 28px;
+            color: #ef4444;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="display-box">
+        <p class="logo-label">SMARTPARK</p>
+        <p class="label">RECOMMENDED SLOT</p>
+        <div id="content">
+            <p class="slot-code">--</p>
+        </div>
+        <div class="stats-row" id="stats"></div>
+        <p class="updated-time" id="updatedTime"></p>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:5000";
+
+        async function loadData() {
+            try {
+                const recResponse = await fetch(`${API_BASE}/api/recommendation`);
+                const rec = await recResponse.json();
+
+                const slotsResponse = await fetch(`${API_BASE}/api/slots`);
+                const slotsData = await slotsResponse.json();
+
+                const total = slotsData.slots.length;
+                const available = slotsData.slots.filter(s => s.status === "available").length;
+                const occupied = total - available;
+
+                const content = document.getElementById("content");
+                if (rec.recommended_slot) {
+                    const arrow = rec.direction.startsWith("LEFT") ? "&larr;" : (rec.direction.startsWith("RIGHT") ? "&rarr;" : "&uarr;");
+                    const directionText = rec.direction.replace(/([A-Z]+)(\d)/, "$1 $2").toLowerCase().replace(/^./, ch => ch.toUpperCase());
+                    content.innerHTML = `
+                        <p class="slot-code">${rec.recommended_slot}</p>
+                        <div class="direction-box">${arrow} Section ${rec.section} - ${directionText}</div>
+                    `;
+                } else {
+                    content.innerHTML = `<p class="full-message">Parking Full</p>`;
+                }
+
+                document.getElementById("stats").innerHTML = `
+                    <div class="stat">
+                        <p class="stat-number">${total}</p>
+                        <p class="stat-label">Total</p>
+                    </div>
+                    <div class="stat">
+                        <p class="stat-number" style="color:#4ade80;">${available}</p>
+                        <p class="stat-label">Available</p>
+                    </div>
+                    <div class="stat">
+                        <p class="stat-number" style="color:#f87171;">${occupied}</p>
+                        <p class="stat-label">Occupied</p>
+                    </div>
+                `;
+
+                const now = new Date();
+                document.getElementById("updatedTime").innerText =
+                    "Last updated: " + now.toLocaleTimeString();
+
+            } catch (error) {
+                document.getElementById("content").innerHTML = `<p class="full-message">Could not connect to server</p>`;
+            }
+        }
+
+        loadData();
+        setInterval(loadData, 3000);
+    </script>
+
+</body>
+</html>

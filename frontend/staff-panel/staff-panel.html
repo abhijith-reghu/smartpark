@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartPark - Staff Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0f172a;
+            margin: 0;
+            padding: 30px;
+            color: white;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #f1f5f9;
+            margin-bottom: 5px;
+        }
+        .subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .section-title {
+            font-size: 13px;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin: 20px 0 10px;
+            text-transform: uppercase;
+        }
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+    .slot-box {
+    border-radius: 20px;
+    padding: 18px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid;
+    font-family: Arial, sans-serif;
+    transition: transform 0.1s;
+}
+.slot-box:hover {
+    transform: scale(1.03);
+}
+.slot-box.available {
+    border-color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.15);
+}
+.slot-box.occupied {
+    border-color: #ef4444;
+    background-color: rgba(239, 68, 68, 0.15);
+}
+.slot-box.available .slot-code,
+.slot-box.available .slot-status {
+    color: #22c55e;
+}
+.slot-box.occupied .slot-code,
+.slot-box.occupied .slot-status {
+    color: #ef4444;
+}
+.slot-code {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+}
+.slot-status {
+    font-size: 12px;
+    margin: 5px 0 0;
+    font-weight: bold;
+}
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SmartPark Staff Panel</h1>
+        <p class="subtitle">Tap a slot to toggle its status</p>
+        <button onclick="logout()" style=" position:absolute; top:12px; right:12px; padding:8px 20px; 
+        background:#1e293b; color:#f87171; border:1px solid #f87171; 
+        border-radius:20px; cursor:pointer; font-size:13px;">Logout</button>
+    </div>
+
+    <div class="container">
+        <div id="sections"></div>
+    </div>
+
+    <script>
+        const API_BASE = "http://127.0.0.1:5000";
+
+        async function loadSlots() {
+            const response = await fetch(`${API_BASE}/api/slots`);
+            const data = await response.json();
+
+            const container = document.getElementById("sections");
+            container.innerHTML = "";
+
+            // Create one titled grid per section (A, B, C, D, E...) automatically
+            const grids = {};
+            data.slots.forEach(slot => {
+                if (!grids[slot.section]) {
+                    const title = document.createElement("p");
+                    title.className = "section-title";
+                    title.textContent = `Section ${slot.section}`;
+                    const grid = document.createElement("div");
+                    grid.className = "slot-grid";
+                    container.appendChild(title);
+                    container.appendChild(grid);
+                    grids[slot.section] = grid;
+                }
+
+                const box = document.createElement("div");
+                box.className = `slot-box ${slot.status}`;
+                box.innerHTML = `
+                    <p class="slot-code">${slot.slot_code}</p>
+                    <p class="slot-status">${slot.status}</p>
+                `;
+                box.onclick = () => toggleSlot(slot.slot_code, slot.status);
+                grids[slot.section].appendChild(box);
+            });
+        }
+
+        async function toggleSlot(slotCode, currentStatus) {
+            const newStatus = currentStatus === "available" ? "occupied" : "available";
+
+            const response = await fetch(`${API_BASE}/api/slots/${slotCode}/update`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ status: newStatus })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                loadSlots();
+            } else {
+                alert("Error: " + result.error + "\n\nMake sure you are logged in.");
+            }
+        }
+        async function logout() {
+            await fetch(`${API_BASE}/api/logout`, {
+                method: "POST",
+                credentials: "include"
+            });
+            window.location.href = "../login/index.html";
+        }
+
+        loadSlots();
+    </script>
+
+</body>
+</html>
