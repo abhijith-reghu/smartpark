@@ -1,0 +1,179 @@
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    .site-nav {
+        max-width: 1100px;
+        margin: 0 auto 30px;
+        padding: 12px 16px;
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        font-family: Arial, sans-serif;
+    }
+
+    .site-nav .brand {
+        color: #93c5fd;
+        font-size: 20px;
+        font-weight: bold;
+        text-decoration: none;
+    }
+
+    .nav-links {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .nav-links a,
+    .nav-links button {
+        font: inherit;
+        font-size: 14px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        text-decoration: none;
+        color: #e2e8f0;
+        border: 1px solid transparent;
+        background: transparent;
+        cursor: pointer;
+    }
+
+    .nav-links a:hover,
+    .nav-links a[aria-current="page"] {
+        background: #334155;
+        color: white;
+    }
+
+    .nav-links button {
+        color: #fca5a5;
+        border-color: #7f1d1d;
+    }
+
+    .nav-links button:hover {
+        background: #451a1a;
+    }
+
+    button:disabled {
+        cursor: wait;
+        opacity: 0.65;
+    }
+
+    a:focus-visible,
+    button:focus-visible {
+        outline: 3px solid #93c5fd;
+        outline-offset: 3px;
+    }
+
+    .notice {
+        max-width: 900px;
+        margin: 12px auto;
+        color: #fca5a5;
+        text-align: center;
+    }
+
+    [hidden] {
+        display: none !important;
+    }
+
+    @media (max-width: 640px) {
+        .site-nav {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .nav-links {
+            gap: 4px;
+        }
+
+        .nav-links a,
+        .nav-links button {
+            padding: 9px;
+            font-size: 13px;
+        }
+
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
+
+        .section-card {
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .progress-bar {
+            width: 100px !important;
+        }
+    }
+</style>
+
+<nav class="site-nav" aria-label="Main navigation">
+    <a class="brand" href="/staff-panel">SmartPark</a>
+
+    <div class="nav-links">
+        <a href="/staff-panel"
+           {% if request.endpoint == 'staff_panel_page' %}
+           aria-current="page"
+           {% endif %}>
+            Staff Panel
+        </a>
+
+        <a href="/dashboard"
+           {% if request.endpoint == 'dashboard_page' %}
+           aria-current="page"
+           {% endif %}>
+            Dashboard
+        </a>
+
+        <a href="/entrance-display"
+           {% if request.endpoint == 'entrance_display_page' %}
+           aria-current="page"
+           {% endif %}>
+            Entrance Display
+        </a>
+
+        {% if session.get('staff_id') %}
+        <button type="button" id="navLogout">Logout</button>
+        {% else %}
+        <a href="/login">Login</a>
+        {% endif %}
+    </div>
+</nav>
+
+<p id="navError" class="notice" role="alert" hidden></p>
+
+<script>
+    (() => {
+        const button = document.getElementById("navLogout");
+        const error = document.getElementById("navError");
+
+        if (!button) return;
+
+        button.addEventListener("click", async () => {
+            button.disabled = true;
+            error.hidden = true;
+
+            try {
+                const response = await fetch("/api/logout", {
+                    method: "POST",
+                    credentials: "same-origin"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Logout failed. Please try again.");
+                }
+
+                window.location.replace("/login");
+            } catch (problem) {
+                error.textContent = problem.message;
+                error.hidden = false;
+                button.disabled = false;
+            }
+        });
+    })();
+</script>

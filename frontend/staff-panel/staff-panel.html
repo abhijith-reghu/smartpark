@@ -2,164 +2,307 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SmartPark - Staff Panel</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #0f172a;
+            background: #0f172a;
             margin: 0;
-            padding: 30px;
-            color: white;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .header h1 {
+            padding: 24px;
             color: #f1f5f9;
-            margin-bottom: 5px;
         }
-        .subtitle {
+
+        .header,
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            margin-bottom: 26px;
+        }
+
+        h1 {
+            margin-bottom: 8px;
+        }
+
+        .subtitle,
+        .section-meta {
             color: #94a3b8;
             font-size: 14px;
+            line-height: 1.6;
         }
-        .section-title {
-            font-size: 13px;
-            color: #94a3b8;
-            letter-spacing: 1px;
-            margin: 20px 0 10px;
-            text-transform: uppercase;
+
+        #summary {
+            color: #93c5fd;
+            line-height: 1.6;
         }
+
+        .section {
+            border: 1px solid #334155;
+            background: #172235;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .section-heading h2 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        .section-meta {
+            margin: 0;
+        }
+
         .slot-grid {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 15px;
-            max-width: 700px;
-            margin: 0 auto;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 12px;
         }
-    .slot-box {
-    border-radius: 20px;
-    padding: 18px;
-    text-align: center;
-    cursor: pointer;
-    border: 2px solid;
-    font-family: Arial, sans-serif;
-    transition: transform 0.1s;
-}
-.slot-box:hover {
-    transform: scale(1.03);
-}
-.slot-box.available {
-    border-color: #22c55e;
-    background-color: rgba(34, 197, 94, 0.15);
-}
-.slot-box.occupied {
-    border-color: #ef4444;
-    background-color: rgba(239, 68, 68, 0.15);
-}
-.slot-box.available .slot-code,
-.slot-box.available .slot-status {
-    color: #22c55e;
-}
-.slot-box.occupied .slot-code,
-.slot-box.occupied .slot-status {
-    color: #ef4444;
-}
-.slot-code {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 0;
-}
-.slot-status {
-    font-size: 12px;
-    margin: 5px 0 0;
-    font-weight: bold;
-}
-        .container {
-            max-width: 700px;
-            margin: 0 auto;
+
+        .slot-box {
+            border-radius: 12px;
+            padding: 20px 8px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid;
+            font-family: inherit;
+        }
+
+        .slot-box:hover {
+            filter: brightness(1.2);
+        }
+
+        .slot-box.available {
+            color: #86efac;
+            border-color: #22c55e;
+            background: rgba(34, 197, 94, 0.10);
+        }
+
+        .slot-box.occupied {
+            color: #fca5a5;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.10);
+        }
+
+        .slot-code,
+        .slot-status {
+            display: block;
+        }
+
+        .slot-code {
+            font-size: 20px;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .slot-status {
+            font-size: 12px;
+            margin-top: 8px;
+            text-transform: capitalize;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 14px;
+            }
+
+            .slot-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .section {
+                padding: 16px;
+            }
         }
     </style>
 </head>
+
 <body>
+    {% include 'navigation.html' %}
 
-    <div class="header">
-    <div style="display:flex; justify-content:right; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
-        <a href="/dashboard" style="padding:8px 20px; background:#1e293b; color:#60a5fa; border:1px solid #60a5fa; border-radius:20px; font-size:13px; text-decoration:none;">Dashboard</a>
-        <a href="/entrance-display" style="padding:8px 20px; background:#1e293b; color:#4ade80; border:1px solid #4ade80; border-radius:20px; font-size:13px; text-decoration:none;">Entrance Display</a>
-        <a href="#" onclick="logout(); return false;" style="padding:8px 20px; background:#1e293b; color:#f87171; border:1px solid #f87171; border-radius:20px; font-size:13px; text-decoration:none;">Logout</a>
-    </div>
-    <h1>SmartPark Staff Panel</h1>
-    <p class="subtitle">Tap a slot to toggle its status</p>
-</div>
+    <header class="header">
+        <h1>Staff Panel</h1>
+        <p class="subtitle">
+            Tap a slot to switch between available and occupied.
+        </p>
+        <p id="summary" aria-live="polite">Loading parking slots…</p>
+    </header>
 
-    <div class="container">
-        <div id="sections"></div>
-    </div>
+    <p id="message" class="notice" role="alert" hidden></p>
+    <main id="sections" class="container"></main>
 
     <script>
-        const API_BASE = "http://127.0.0.1:5000";
+        let updating = false;
+
+        const message = document.getElementById("message");
+
+        function showError(error) {
+            message.textContent = error.message;
+            message.hidden = false;
+        }
 
         async function loadSlots() {
-            const response = await fetch(`${API_BASE}/api/slots`);
+            const response = await fetch("/api/slots", {
+                cache: "no-store"
+            });
+
+            if (!response.ok) {
+                throw new Error("Could not load slots. Please refresh.");
+            }
+
             const data = await response.json();
+            const groups = new Map();
 
-            const container = document.getElementById("sections");
-            container.innerHTML = "";
-
-            // Create one titled grid per section (A, B, C, D, E...) automatically
-            const grids = {};
-            data.slots.forEach(slot => {
-                if (!grids[slot.section]) {
-                    const title = document.createElement("p");
-                    title.className = "section-title";
-                    title.textContent = `Section ${slot.section}`;
-                    const grid = document.createElement("div");
-                    grid.className = "slot-grid";
-                    container.appendChild(title);
-                    container.appendChild(grid);
-                    grids[slot.section] = grid;
+            for (const slot of data.slots) {
+                if (!groups.has(slot.section)) {
+                    groups.set(slot.section, []);
                 }
 
-                const box = document.createElement("div");
-                box.className = `slot-box ${slot.status}`;
-                box.innerHTML = `
-                    <p class="slot-code">${slot.slot_code}</p>
-                    <p class="slot-status">${slot.status}</p>
-                `;
-                box.onclick = () => toggleSlot(slot.slot_code, slot.status);
-                grids[slot.section].appendChild(box);
-            });
+                groups.get(slot.section).push(slot);
+            }
+
+            const container = document.getElementById("sections");
+            container.replaceChildren();
+
+            const sortedGroups = [...groups].sort(
+                ([a], [b]) => a.localeCompare(b)
+            );
+
+            for (const [name, slots] of sortedGroups) {
+                slots.sort((a, b) => a.slot_code.localeCompare(
+                    b.slot_code, undefined, { numeric: true }
+                ));
+
+                const section = document.createElement("section");
+                section.className = "section";
+
+                const heading = document.createElement("div");
+                heading.className = "section-heading";
+
+                const title = document.createElement("h2");
+                title.textContent = `Section ${name}`;
+
+                const meta = document.createElement("p");
+                meta.className = "section-meta";
+
+                const free = slots.filter(
+                    slot => slot.status === "available"
+                ).length;
+
+                const direction = slots[0].direction || "";
+                meta.textContent =
+                    `${direction} · ${free} / ${slots.length} available`;
+
+                heading.append(title, meta);
+
+                const grid = document.createElement("div");
+                grid.className = "slot-grid";
+
+                for (const slot of slots) {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = `slot-box ${slot.status}`;
+
+                    const nextStatus = slot.status === "available"
+                        ? "occupied"
+                        : "available";
+
+                    button.setAttribute(
+                        "aria-label",
+                        `${slot.slot_code}: ${slot.status}. Mark ${nextStatus}`
+                    );
+
+                    const code = document.createElement("span");
+                    code.className = "slot-code";
+                    code.textContent = slot.slot_code;
+
+                    const status = document.createElement("span");
+                    status.className = "slot-status";
+                    status.textContent = slot.status;
+
+                    button.append(code, status);
+
+                    button.addEventListener("click", () => {
+                        toggleSlot(slot.slot_code, nextStatus);
+                    });
+
+                    grid.append(button);
+                }
+
+                section.append(heading, grid);
+                container.append(section);
+            }
+
+            const available = data.slots.filter(
+                slot => slot.status === "available"
+            ).length;
+
+            document.getElementById("summary").textContent =
+                `${data.slots.length} slots · ${groups.size} sections · ` +
+                `${available} available · ` +
+                `${data.slots.length - available} occupied`;
         }
 
-        async function toggleSlot(slotCode, currentStatus) {
-            const newStatus = currentStatus === "available" ? "occupied" : "available";
+        async function toggleSlot(code, status) {
+            if (updating) return;
 
-            const response = await fetch(`${API_BASE}/api/slots/${slotCode}/update`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify({ status: newStatus })
+            updating = true;
+            message.hidden = true;
+
+            document.querySelectorAll(".slot-box").forEach(button => {
+                button.disabled = true;
             });
 
-            const result = await response.json();
+            try {
+                const response = await fetch(
+                    `/api/slots/${encodeURIComponent(code)}/update`,
+                    {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "same-origin",
+                        body: JSON.stringify({ status })
+                    }
+                );
 
-            if (result.success) {
-                loadSlots();
-            } else {
-                alert("Error: " + result.error + "\n\nMake sure you are logged in.");
+                if (response.status === 401) {
+                    window.location.replace("/login");
+                    return;
+                }
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.error || "Could not update the slot."
+                    );
+                }
+
+                await loadSlots();
+            } catch (error) {
+                showError(error);
+            } finally {
+                updating = false;
+
+                document.querySelectorAll(".slot-box").forEach(button => {
+                    button.disabled = false;
+                });
             }
         }
-        async function logout() {
-            await fetch(`${API_BASE}/api/logout`, {
-                method: "POST",
-                credentials: "include"
-            });
-            window.location.href = "../login/index.html";
-        }
 
-        loadSlots();
+        loadSlots().catch(showError);
     </script>
-
 </body>
 </html>
