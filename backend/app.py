@@ -1,3 +1,9 @@
+import base64
+from ipaddress import ip_address
+from urllib.parse import urlsplit
+
+import qrcode
+from qrcode.image.svg import SvgPathFillImage
 from pathlib import Path
 
 from flask import Flask, request, jsonify, session, render_template
@@ -13,6 +19,44 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app = Flask(__name__, template_folder=str(FRONTEND_DIR))
 CORS(app, supports_credentials=True)
 app.secret_key = SECRET_KEY
+
+#-----------new addedd----
+def entrance_qr():
+    """
+    Create a QR pointing to the driver page.
+
+    Use the address that opened the entrance display.
+    Do not generate a QR for localhost because phones
+    cannot use localhost to reach this computer.
+    """
+    host = urlsplit(request.host_url).hostname or ""
+
+    try:
+        address = ip_address(host)
+        local_only = address.is_loopback or address.is_unspecified
+    except ValueError:
+        local_only = (
+            host == "localhost"
+            or host.endswith(".localhost")
+        )
+
+    if local_only:
+        return "", ""
+
+    destination = request.host_url.rstrip("/") + "/driver"
+
+    qr = qrcode.QRCode(box_size=10, border=4)
+    qr.add_data(destination)
+    qr.make(fit=True)
+
+    image = qr.make_image(image_factory=SvgPathFillImage)
+    encoded = base64.b64encode(
+        image.to_string()
+    ).decode("ascii")
+
+    qr_image = "data:image/svg+xml;base64," + encoded
+
+    return destination, qr_image
 
 
 # ---------- PAGE ROUTES ----------
@@ -33,12 +77,26 @@ def login_page():
 def staff_panel_page():
     return render_template("staff-panel/staff-panel.html")
 
-
 @app.route("/entrance-display")
 @app.route("/entrance-display/index.html")
 @app.route("/entrance-display/entrance_display.html")
 def entrance_display_page():
-    return render_template("entrance-display/entrance_display.html")
+    destination, qr_image = entrance_qr()
+
+    return render_template(
+        "entrance-display/entrance_display.html",
+        driver_mode=False,
+        destination=destination,
+        qr_image=qr_image,
+    )
+
+
+@app.route("/driver")
+def driver_page():
+    return render_template(
+        "entrance-display/entrance_display.html",
+        driver_mode=True,
+    )
 
 
 @app.route("/dashboard")
@@ -94,6 +152,7 @@ def get_slots():
         SELECT parking_slots.slot_code,
                parking_slots.status,
                sections.name AS section,
+               sections.direction,
                parking_slots.last_updated
         FROM parking_slots
         JOIN sections
@@ -226,4 +285,4 @@ def get_stats():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=False)
