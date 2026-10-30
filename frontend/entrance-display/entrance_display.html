@@ -2,156 +2,539 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SmartPark - Entrance Display</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SmartPark - Parking Directions</title>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #0f172a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+        * {
+            box-sizing: border-box;
         }
-        .display-box {
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
             background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        .display {
+            max-width: 1100px;
+            margin: 24px auto;
+            text-align: center;
+        }
+
+        .driver-view {
+            max-width: 750px;
+        }
+
+        h1 {
+            font-size: clamp(28px, 5vw, 40px);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .display-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 300px;
+            align-items: start;
+            gap: 24px;
+        }
+
+        .driver-view .display-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .guidance-card {
+            padding: 28px;
+            border: 2px solid #3b82f6;
+            border-radius: 24px;
+            background: #172554;
+        }
+
+        .eyebrow {
+            margin: 0;
+            color: #bfdbfe;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        .direction-arrow {
+            display: block;
+            width: clamp(150px, 25vw, 230px);
+            height: clamp(150px, 25vw, 230px);
+            margin: 12px auto;
+            color: #93c5fd;
+        }
+
+        .instruction {
+            font-size: clamp(30px, 5vw, 46px);
+            margin: 8px 0;
+        }
+
+        .direction-label {
+            color: #bfdbfe;
+            font-size: 19px;
+            margin-bottom: 24px;
+        }
+
+        .parking-label {
+            margin-bottom: 6px;
+            color: #cbd5e1;
+        }
+
+        .slot-number {
+            margin: 0;
+            font-size: clamp(64px, 12vw, 100px);
+            line-height: 1.1;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        .section-label {
+            font-size: 24px;
+            margin: 12px 0;
+        }
+
+        .available-badge {
+            display: inline-block;
+            background: #14532d;
+            color: #bbf7d0;
+            border: 1px solid #4ade80;
+            padding: 9px 18px;
+            border-radius: 999px;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+
+        .status-card {
+            padding: 50px 24px;
+            border-radius: 24px;
+            background: #1e293b;
+            border: 2px solid #64748b;
+        }
+
+        .status-card.full {
+            background: #450a0a;
+            border-color: #f87171;
+        }
+
+        .status-card h2 {
+            font-size: clamp(28px, 5vw, 42px);
+        }
+
+        .status-card p {
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 16px;
+            padding: 20px 8px;
+        }
+
+        .stat-number {
+            display: block;
+            font-size: clamp(26px, 4vw, 38px);
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            color: #cbd5e1;
+            font-size: 13px;
+        }
+
+        .green {
+            color: #86efac;
+        }
+
+        .red {
+            color: #fca5a5;
+        }
+
+        .qr-card {
+            background: #1e293b;
             border: 1px solid #334155;
             border-radius: 24px;
-            padding: 40px 60px;
-            text-align: center;
-            width: 380px;
+            padding: 24px;
         }
-        .logo-label {
-            font-size: 13px;
-            color: #60a5fa;
-            letter-spacing: 2px;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .label {
-            font-size: 13px;
-            color: #94a3b8;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-        }
-        .slot-code {
-            font-size: 70px;
-            font-weight: bold;
-            color: #60a5fa;
-            margin: 0 0 20px 0;
-        }
-        .direction-box {
-            background-color: #1e293b;
-            border: 1px solid #3b82f6;
-            border-radius: 20px;
-            padding: 15px 30px;
-            display: inline-block;
-            font-size: 20px;
-            font-weight: bold;
-            color: #60a5fa;
-            margin-bottom: 25px;
-        }
-        .stats-row {
-            display: flex;
-            justify-content: space-between;
-            border-top: 1px solid #334155;
-            padding-top: 20px;
-            margin-top: 10px;
-        }
-        .stat {
-            text-align: center;
-            flex: 1;
-        }
-        .stat-number {
+
+        .qr-card h2 {
             font-size: 24px;
-            font-weight: bold;
-            color: white;
-            margin: 0;
+            margin: 0 0 12px;
         }
-        .stat-label {
-            font-size: 11px;
+
+        .qr-card p {
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .qr-image {
+            display: block;
+            width: 100%;
+            max-width: 260px;
+            height: auto;
+            margin: 20px auto;
+            background: white;
+        }
+
+        .qr-link {
+            display: block;
+            color: #93c5fd;
+            overflow-wrap: anywhere;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .qr-setup {
+            padding: 16px;
+            background: #172554;
+            border-radius: 12px;
+        }
+
+        .updated,
+        .note {
             color: #94a3b8;
-            margin: 4px 0 0;
-            text-transform: uppercase;
+            font-size: 13px;
+            line-height: 1.6;
         }
-        .updated-time {
-            font-size: 11px;
-            color: #64748b;
-            margin-top: 18px;
-        }
-        .full-message {
-            font-size: 28px;
-            color: #ef4444;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
 
-    <div class="display-box">
-        <p class="logo-label">SMARTPARK</p>
-        <p class="label">RECOMMENDED SLOT</p>
-        <div id="content">
-            <p class="slot-code">--</p>
-        </div>
-        <div class="stats-row" id="stats"></div>
-        <p class="updated-time" id="updatedTime"></p>
-    </div>
+        @media (max-width: 850px) {
+            .display-grid {
+                grid-template-columns: 1fr;
+            }
 
-    <script>
-        const API_BASE = "http://127.0.0.1:5000";
-
-        async function loadData() {
-            try {
-                const recResponse = await fetch(`${API_BASE}/api/recommendation`);
-                const rec = await recResponse.json();
-
-                const slotsResponse = await fetch(`${API_BASE}/api/slots`);
-                const slotsData = await slotsResponse.json();
-
-                const total = slotsData.slots.length;
-                const available = slotsData.slots.filter(s => s.status === "available").length;
-                const occupied = total - available;
-
-                const content = document.getElementById("content");
-                if (rec.recommended_slot) {
-                    const arrow = rec.direction.startsWith("LEFT") ? "&larr;" : (rec.direction.startsWith("RIGHT") ? "&rarr;" : "&uarr;");
-                    const directionText = rec.direction.replace(/([A-Z]+)(\d)/, "$1 $2").toLowerCase().replace(/^./, ch => ch.toUpperCase());
-                    content.innerHTML = `
-                        <p class="slot-code">${rec.recommended_slot}</p>
-                        <div class="direction-box">${arrow} Section ${rec.section} - ${directionText}</div>
-                    `;
-                } else {
-                    content.innerHTML = `<p class="full-message">Parking Full</p>`;
-                }
-
-                document.getElementById("stats").innerHTML = `
-                    <div class="stat">
-                        <p class="stat-number">${total}</p>
-                        <p class="stat-label">Total</p>
-                    </div>
-                    <div class="stat">
-                        <p class="stat-number" style="color:#4ade80;">${available}</p>
-                        <p class="stat-label">Available</p>
-                    </div>
-                    <div class="stat">
-                        <p class="stat-number" style="color:#f87171;">${occupied}</p>
-                        <p class="stat-label">Occupied</p>
-                    </div>
-                `;
-
-                const now = new Date();
-                document.getElementById("updatedTime").innerText =
-                    "Last updated: " + now.toLocaleTimeString();
-
-            } catch (error) {
-                document.getElementById("content").innerHTML = `<p class="full-message">Could not connect to server</p>`;
+            .qr-card {
+                max-width: 420px;
+                width: 100%;
+                margin: 0 auto;
             }
         }
 
-        loadData();
-        setInterval(loadData, 3000);
-    </script>
+        @media (max-width: 480px) {
+            body {
+                padding: 14px;
+            }
 
+            .guidance-card {
+                padding: 24px 14px;
+            }
+
+            .stats {
+                gap: 8px;
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    {% if not driver_mode %}
+        {% include 'navigation.html' %}
+    {% endif %}
+
+    <main class="display {% if driver_mode %}driver-view{% endif %}">
+        <h1>Welcome to SmartPark</h1>
+
+        <p class="subtitle">
+            Follow the direction from the parking entrance
+            to your recommended slot.
+        </p>
+
+        <div class="display-grid">
+            <div>
+                <div aria-live="polite" aria-atomic="true">
+                    <section id="availableCard" class="guidance-card" hidden>
+                        <p class="eyebrow">FOLLOW THIS DIRECTION</p>
+
+                        <svg id="directionArrow"
+                             class="direction-arrow"
+                             viewBox="0 0 100 100"
+                             aria-hidden="true">
+                            <g id="arrowShape">
+                                <path fill="currentColor"
+                                      d="M50 5 L92 47 H65 V95 H35 V47 H8 Z">
+                                </path>
+                            </g>
+                        </svg>
+
+                        <h2 id="instruction" class="instruction"></h2>
+                        <p id="directionLabel" class="direction-label"></p>
+
+                        <p class="parking-label">PARK IN SLOT</p>
+                        <p id="slotNumber" class="slot-number"></p>
+                        <p id="sectionLabel" class="section-label"></p>
+
+                        <span class="available-badge">Slot available</span>
+                    </section>
+
+                    <section id="statusCard" class="status-card">
+                        <h2 id="statusTitle">Checking availability…</h2>
+                        <p id="statusDescription">
+                            Please wait while we find a parking slot.
+                        </p>
+                    </section>
+                </div>
+
+                <section class="stats" aria-label="Parking availability">
+                    <div class="stat">
+                        <span id="availableCount"
+                              class="stat-number green">—</span>
+                        <span class="stat-label">Available slots</span>
+                    </div>
+
+                    <div class="stat">
+                        <span id="occupiedCount"
+                              class="stat-number red">—</span>
+                        <span class="stat-label">Occupied slots</span>
+                    </div>
+
+                    <div class="stat">
+                        <span id="totalCount"
+                              class="stat-number">—</span>
+                        <span class="stat-label">Total slots</span>
+                    </div>
+                </section>
+
+                <p id="updatedTime" class="updated">
+                    Updates automatically every 3 seconds.
+                </p>
+            </div>
+
+            {% if not driver_mode %}
+            <aside class="qr-card">
+                <h2>Directions on your phone</h2>
+                <p>
+                    Scan this QR code with your phone camera
+                    to open live parking directions.
+                </p>
+
+                {% if qr_image %}
+                    <img class="qr-image"
+                         src="{{ qr_image }}"
+                         alt="Scan to open SmartPark parking directions">
+
+                    <p>No staff login required.</p>
+
+                    <a class="qr-link" href="{{ destination }}">
+                        {{ destination }}
+                    </a>
+
+                    <p class="note">
+                        For this local demonstration, connect your phone
+                        to the same Wi-Fi as this computer.
+                    </p>
+                {% else %}
+                    <div class="qr-setup">
+                        <p><strong>Open using your Wi-Fi address</strong></p>
+                        <p>
+                            Open this display using your computer's
+                            Wi-Fi IPv4 address instead of localhost.
+                            The QR will then appear.
+                        </p>
+                        <p>Example:</p>
+                        <p class="qr-link">
+                            http://192.168.1.10:5000/entrance-display
+                        </p>
+                    </div>
+                {% endif %}
+            </aside>
+            {% endif %}
+        </div>
+
+        <p class="note">
+            Live guidance, not a reservation. Availability may change.
+            Follow the signs inside the parking area.
+        </p>
+    </main>
+
+    <script>
+        const availableCard = document.getElementById("availableCard");
+        const statusCard = document.getElementById("statusCard");
+
+        const directions = {
+            "LEFT":     { text: "Head left", rotation: -90 },
+            "LEFT 1":   { text: "Head left", rotation: -90 },
+            "LEFT 2":   { text: "Head left", rotation: -90 },
+            "STRAIGHT": { text: "Go straight", rotation: 0 },
+            "RIGHT":    { text: "Head right", rotation: 90 },
+            "RIGHT 1":  { text: "Head right", rotation: 90 },
+            "RIGHT 2":  { text: "Head right", rotation: 90 }
+        };
+
+        let previousGuidance = "";
+
+        function showStatus(title, description, full = false) {
+            availableCard.hidden = true;
+            statusCard.hidden = false;
+            statusCard.className = full
+                ? "status-card full"
+                : "status-card";
+
+            document.getElementById("statusTitle").textContent = title;
+            document.getElementById("statusDescription").textContent =
+                description;
+        }
+
+        async function getJSON(url) {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 8000);
+
+            try {
+                const response = await fetch(url, {
+                    cache: "no-store",
+                    signal: controller.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error("Could not load parking information.");
+                }
+
+                return await response.json();
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        async function loadDisplay() {
+            try {
+                const [rec, data] = await Promise.all([
+                    getJSON("/api/recommendation"),
+                    getJSON("/api/slots")
+                ]);
+
+                const total = data.slots.length;
+                const available = data.slots.filter(
+                    slot => slot.status === "available"
+                ).length;
+
+                document.getElementById("availableCount").textContent =
+                    available;
+                document.getElementById("occupiedCount").textContent =
+                    total - available;
+                document.getElementById("totalCount").textContent =
+                    total;
+
+                // The two requests may briefly see different slot states.
+                const recommended = data.slots.find(
+                    slot => slot.slot_code === rec.recommended_slot
+                );
+
+                const consistent = rec.recommended_slot
+                    ? recommended && recommended.status === "available"
+                    : available === 0;
+
+                if (!consistent) {
+                    previousGuidance = "";
+                    showStatus(
+                        "Updating directions…",
+                        "Availability changed. Checking the next slot."
+                    );
+                    document.getElementById("updatedTime").textContent =
+                        "Checking the latest availability…";
+                    return;
+                }
+
+                const guidanceKey = JSON.stringify([rec, total]);
+
+                if (guidanceKey !== previousGuidance) {
+                    if (total === 0) {
+                        showStatus(
+                            "No parking slots configured",
+                            "Please contact a staff member."
+                        );
+                    } else if (!rec.recommended_slot) {
+                        showStatus(
+                            "PARKING FULL",
+                            "All slots are occupied. Please wait for a slot.",
+                            true
+                        );
+                    } else {
+                        const direction = directions[rec.direction];
+
+                        document.getElementById("slotNumber").textContent =
+                            rec.recommended_slot;
+
+                        document.getElementById("sectionLabel").textContent =
+                            `Section ${rec.section}`;
+
+                        document.getElementById("instruction").textContent =
+                            direction
+                                ? direction.text
+                                : "Follow section signs";
+
+                        document.getElementById("directionLabel").textContent =
+                            rec.direction || "";
+
+                        const arrow = document.getElementById("directionArrow");
+
+                        // Use an attribute because this is an SVG element.
+                        arrow.toggleAttribute("hidden", !direction);
+
+                        if (direction) {
+                            document.getElementById("arrowShape").setAttribute(
+                                "transform",
+                                `rotate(${direction.rotation} 50 50)`
+                            );
+                        }
+
+                        availableCard.hidden = false;
+                        statusCard.hidden = true;
+                    }
+
+                    previousGuidance = guidanceKey;
+                }
+
+                document.getElementById("updatedTime").textContent =
+                    "Last updated: " + new Date().toLocaleTimeString() +
+                    " · Refreshes every 3 seconds";
+            } catch (error) {
+                previousGuidance = "";
+
+                showStatus(
+                    "Live information unavailable",
+                    "Please check with a staff member. Reconnecting…"
+                );
+
+                for (const id of [
+                    "availableCount",
+                    "occupiedCount",
+                    "totalCount"
+                ]) {
+                    document.getElementById(id).textContent = "—";
+                }
+
+                document.getElementById("updatedTime").textContent =
+                    "Connection interrupted · Retrying automatically";
+            } finally {
+                setTimeout(loadDisplay, 3000);
+            }
+        }
+
+        loadDisplay();
+    </script>
 </body>
 </html>
