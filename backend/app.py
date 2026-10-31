@@ -10,7 +10,7 @@ from flask import Flask, request, jsonify, session, render_template
 from flask_cors import CORS
 from config import SECRET_KEY
 from auth import verify_login, login_required
-from database import get_db_connection
+from database import get_db_connection, initialize_database
 
 
 # SmartPark/frontend
@@ -19,6 +19,7 @@ FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 app = Flask(__name__, template_folder=str(FRONTEND_DIR))
 CORS(app, supports_credentials=True)
 app.secret_key = SECRET_KEY
+initialize_database()
 
 #-----------new addedd----
 def entrance_qr():
