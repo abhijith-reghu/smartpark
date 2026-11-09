@@ -32,3 +32,13 @@ CREATE TABLE IF NOT EXISTS parking_events (
     FOREIGN KEY (slot_id) REFERENCES parking_slots(slot_id),
     FOREIGN KEY (changed_by) REFERENCES staff(staff_id)
 );
+
+-- Driver parking reservations
+CREATE TABLE IF NOT EXISTS reservations (
+    reservation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slot_id INTEGER NOT NULL UNIQUE,
+    driver_id TEXT NOT NULL UNIQUE,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (slot_id) REFERENCES parking_slots(slot_id)
+);
