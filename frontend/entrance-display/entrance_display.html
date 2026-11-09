@@ -248,6 +248,43 @@
                 font-size: 12px;
             }
         }
+
+        /* Compact entrance display layout */
+        body { padding: 14px; }
+        .display { max-width: 920px; margin: 12px auto; }
+        .driver-view { max-width: 650px; }
+        h1 { font-size: clamp(24px, 3.5vw, 32px); margin: 0 0 6px; }
+        .subtitle { font-size: 14px; line-height: 1.45; margin: 0 0 16px; }
+        .display-grid { grid-template-columns: minmax(0, 1fr) 250px; gap: 16px; }
+        .guidance-card { padding: 18px; border-radius: 18px; }
+        .eyebrow { font-size: 12px; letter-spacing: 1.5px; }
+        .direction-arrow { width: clamp(105px, 17vw, 165px); height: clamp(105px, 17vw, 165px); margin: 8px auto; }
+        .instruction { font-size: clamp(24px, 3.5vw, 34px); margin: 5px 0; }
+        .direction-label { font-size: 16px; margin-bottom: 14px; }
+        .slot-number { font-size: clamp(48px, 8vw, 72px); }
+        .section-label { font-size: 19px; margin: 8px 0; }
+        .available-badge { padding: 7px 14px; font-size: 13px; }
+        .status-card { padding: 28px 18px; border-radius: 18px; }
+        .status-card h2 { font-size: clamp(23px, 3.5vw, 32px); }
+        .status-card p { font-size: 14px; line-height: 1.45; }
+        .stats { gap: 8px; margin-top: 14px; }
+        .stat { padding: 13px 6px; border-radius: 12px; }
+        .stat-number { font-size: clamp(22px, 3vw, 30px); margin-bottom: 4px; }
+        .stat-label { font-size: 11px; }
+        .qr-card { padding: 18px; border-radius: 18px; }
+        .qr-card h2 { font-size: 20px; }
+        .qr-card p { font-size: 14px; line-height: 1.45; }
+        .qr-image { max-width: 200px; margin: 12px auto; }
+        @media (max-width: 850px) {
+            .display-grid { grid-template-columns: 1fr; }
+            .qr-card { max-width: 360px; }
+        }
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .guidance-card { padding: 16px 12px; }
+            .direction-arrow { width: 115px; height: 115px; }
+            .slot-number { font-size: 54px; }
+        }
     </style>
 </head>
 
@@ -375,17 +412,29 @@
         const availableCard = document.getElementById("availableCard");
         const statusCard = document.getElementById("statusCard");
 
+        // Normalize values from the database (LEFT1, LEFT 1, left-1, etc.)
+        // so every configured section displays the correct arrow.
         const directions = {
             "LEFT":     { text: "Head left", rotation: -90 },
-            "LEFT 1":   { text: "Head left", rotation: -90 },
-            "LEFT 2":   { text: "Head left", rotation: -90 },
+            "LEFT1":    { text: "Head left", rotation: -90 },
+            "LEFT2":    { text: "Head left", rotation: -90 },
             "STRAIGHT": { text: "Go straight", rotation: 0 },
             "RIGHT":    { text: "Head right", rotation: 90 },
-            "RIGHT 1":  { text: "Head right", rotation: 90 },
-            "RIGHT 2":  { text: "Head right", rotation: 90 }
+            "RIGHT1":   { text: "Head right", rotation: 90 },
+            "RIGHT2":   { text: "Head right", rotation: 90 }
         };
 
+        function getDirection(value) {
+            const key = String(value || "")
+                .toUpperCase()
+                .replace(/[\\s_-]/g, "");
+            return directions[key] || null;
+        }
+
         let previousGuidance = "";
+
+        const driverMode = document.querySelector(".display")
+    .classList.contains("driver-view");
 
         function showStatus(title, description, full = false) {
             availableCard.hidden = true;
@@ -421,20 +470,28 @@
 
         async function loadDisplay() {
             try {
+                const recommendationUrl = driverMode
+                    ? "/api/reserve"
+                    : "/api/recommendation";
+
                 const [rec, data] = await Promise.all([
-                    getJSON("/api/recommendation"),
+                    getJSON(recommendationUrl),
                     getJSON("/api/slots")
                 ]);
 
                 const total = data.slots.length;
                 const available = data.slots.filter(
-                    slot => slot.status === "available"
+                    slot => slot.status === "available" && !slot.is_reserved
+                ).length;
+
+                const occupied = data.slots.filter(
+                    slot => slot.status === "occupied"
                 ).length;
 
                 document.getElementById("availableCount").textContent =
                     available;
                 document.getElementById("occupiedCount").textContent =
-                    total - available;
+                    occupied;
                 document.getElementById("totalCount").textContent =
                     total;
 
@@ -473,7 +530,7 @@
                             true
                         );
                     } else {
-                        const direction = directions[rec.direction];
+                        const direction = getDirection(rec.direction);
 
                         document.getElementById("slotNumber").textContent =
                             rec.recommended_slot;

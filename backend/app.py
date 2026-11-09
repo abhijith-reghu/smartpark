@@ -1,4 +1,5 @@
 import base64
+from datetime import datetime, timedelta
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
@@ -6,7 +7,7 @@ import qrcode
 from qrcode.image.svg import SvgPathFillImage
 from pathlib import Path
 
-from flask import Flask, request, jsonify, session, render_template
+from flask import Flask, request, jsonify, session, render_template, redirect
 from flask_cors import CORS
 from config import SECRET_KEY
 from auth import verify_login, login_required
@@ -104,6 +105,8 @@ def driver_page():
 @app.route("/dashboard/index.html")
 @app.route("/dashboard/dashboard.html")
 def dashboard_page():
+    if "staff_id" not in session:
+        return redirect("/login")
     return render_template("dashboard/dashboard.html")
 
 
@@ -204,6 +207,13 @@ def update_slot(slot_code):
         (data["status"], slot_code)
     )
 
+    # A slot marked occupied must no longer remain reserved for a driver.
+    if data["status"] == "occupied":
+        conn.execute(
+            "DELETE FROM reservations WHERE slot_id = ?",
+            (slot["slot_id"],)
+        )
+
     event_type = (
         "occupied" if data["status"] == "occupied" else "vacated"
     )
@@ -226,6 +236,120 @@ def update_slot(slot_code):
     })
 
 
+# ---------- DRIVER RESERVATIONS ----------
+
+@app.route("/api/reserve", methods=["GET"])
+def reserve_slot():
+    driver_id = session.get("driver_id")
+
+    if not driver_id:
+        import uuid
+        driver_id = str(uuid.uuid4())
+        session["driver_id"] = driver_id
+
+    conn = get_db_connection()
+
+    try:
+        # Lock the database while assigning a slot.
+        conn.execute("BEGIN IMMEDIATE")
+
+        # Remove expired reservations.
+        conn.execute("""
+            DELETE FROM reservations
+            WHERE expires_at <= CURRENT_TIMESTAMP
+        """)
+
+        # Check whether this driver already has a reservation.
+        existing = conn.execute("""
+            SELECT parking_slots.slot_code,
+                   sections.name AS section,
+                   sections.direction
+            FROM reservations
+            JOIN parking_slots
+                ON reservations.slot_id = parking_slots.slot_id
+            JOIN sections
+                ON parking_slots.section_id = sections.section_id
+            WHERE reservations.driver_id = ?
+              AND parking_slots.status = 'available'
+              AND reservations.expires_at > CURRENT_TIMESTAMP
+        """, (driver_id,)).fetchone()
+
+        # Clear expired or no-longer-valid reservations for this driver.
+        if not existing:
+            conn.execute("""
+                DELETE FROM reservations
+                WHERE driver_id = ?
+                   OR expires_at <= CURRENT_TIMESTAMP
+            """, (driver_id,))
+
+        if existing:
+            conn.commit()
+            return jsonify({
+                "success": True,
+                "recommended_slot": existing["slot_code"],
+                "section": existing["section"],
+                "direction": existing["direction"],
+                "reserved": True
+            })
+
+        # Find the nearest available slot that is not reserved.
+        slot = conn.execute("""
+            SELECT parking_slots.slot_id,
+                   parking_slots.slot_code,
+                   sections.name AS section,
+                   sections.direction
+            FROM parking_slots
+            JOIN sections
+                ON parking_slots.section_id = sections.section_id
+            WHERE parking_slots.status = 'available'
+              AND parking_slots.slot_id NOT IN (
+                  SELECT slot_id FROM reservations
+              )
+            ORDER BY parking_slots.distance_from_entrance ASC
+            LIMIT 1
+        """).fetchone()
+
+        if not slot:
+            conn.commit()
+            return jsonify({
+                "success": False,
+                "recommended_slot": None,
+                "message": "No parking slots available"
+            })
+
+        # Reserve the slot for 10 minutes.
+        conn.execute("""
+            INSERT INTO reservations
+                (slot_id, driver_id, expires_at)
+            VALUES (
+                ?,
+                ?,
+                datetime('now', '+10 minutes')
+            )
+        """, (slot["slot_id"], driver_id))
+
+        conn.commit()
+
+        return jsonify({
+            "success": True,
+            "recommended_slot": slot["slot_code"],
+            "section": slot["section"],
+            "direction": slot["direction"],
+            "reserved": True
+        })
+
+    except Exception:
+        conn.rollback()
+        app.logger.exception("Could not reserve parking slot")
+        return jsonify({
+            "success": False,
+            "message": "Unable to reserve a parking slot"
+        }), 500
+
+    finally:
+        conn.close()
+
+
 # ---------- PARKING RECOMMENDATION ----------
 
 @app.route("/api/recommendation", methods=["GET"])
@@ -240,6 +364,12 @@ def get_recommendation():
         JOIN sections
             ON parking_slots.section_id = sections.section_id
         WHERE parking_slots.status = 'available'
+            AND NOT EXISTS (
+                SELECT 1
+                FROM reservations
+                WHERE reservations.slot_id = parking_slots.slot_id
+                  AND reservations.expires_at > CURRENT_TIMESTAMP
+           )
         ORDER BY parking_slots.distance_from_entrance ASC
         LIMIT 1
     """).fetchone()

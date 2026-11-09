@@ -85,14 +85,33 @@
             background-color: #4ade80;
             height: 100%;
         }
+        .dashboard-error {
+            max-width: 800px;
+            margin: 0 auto 18px;
+            padding: 12px 16px;
+            color: #fecaca;
+            background: #450a0a;
+            border: 1px solid #7f1d1d;
+            border-radius: 10px;
+        }
+        @media (max-width: 640px) {
+            body { padding: 16px; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .section-card { gap: 12px; flex-wrap: wrap; }
+            .progress-bar { width: 100px; }
+        }
     </style>
 </head>
 <body>
+
+    {% include 'navigation.html' %}
 
     <div class="header">
         <h1>SmartPark Admin Dashboard</h1>
         <p class="subtitle">Live parking statistics</p>
     </div>
+
+    <p id="dashboardError" class="dashboard-error" role="alert" hidden></p>
 
     <div class="container">
         <div class="stats-grid" id="statsGrid"></div>
@@ -102,12 +121,26 @@
     </div>
 
     <script>
-        const API_BASE = "";
-
         async function loadDashboard() {
-            const response = await fetch(`${API_BASE}/api/slots`);
-            const data = await response.json();
-            const slots = data.slots;
+            const errorBox = document.getElementById("dashboardError");
+
+            try {
+                const response = await fetch("/api/slots", {
+                    cache: "no-store",
+                    credentials: "same-origin"
+                });
+
+                if (response.status === 401) {
+                    window.location.replace("/login");
+                    return;
+                }
+                if (!response.ok) {
+                    throw new Error("Could not load parking data. Please refresh.");
+                }
+
+                const data = await response.json();
+                const slots = Array.isArray(data.slots) ? data.slots : [];
+                errorBox.hidden = true;
 
             const total = slots.length;
             const available = slots.filter(s => s.status === "available").length;
@@ -158,7 +191,12 @@
                     </div>
                 `;
             }
-            document.getElementById("sectionBreakdown").innerHTML = breakdownHTML;
+                document.getElementById("sectionBreakdown").innerHTML =
+                    breakdownHTML || "<p>No parking sections are configured.</p>";
+            } catch (error) {
+                errorBox.textContent = error.message || "Dashboard could not load.";
+                errorBox.hidden = false;
+            }
         }
 
         loadDashboard();
