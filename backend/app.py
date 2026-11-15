@@ -75,8 +75,9 @@ def login_page():
 @app.route("/staff-panel/index.html")
 @app.route("/staff_panel/index.html")
 @app.route("/staff-panel/staff-panel.html")
-@login_required
 def staff_panel_page():
+    if "staff_id" not in session:
+        return redirect("/login")
     return render_template("staff-panel/staff-panel.html")
 
 @app.route("/entrance-display")
@@ -152,12 +153,18 @@ def logout():
 def get_slots():
     conn = get_db_connection()
 
-    slots = conn.execute("""
+       slots = conn.execute("""
         SELECT parking_slots.slot_code,
                parking_slots.status,
                sections.name AS section,
                sections.direction,
-               parking_slots.last_updated
+               parking_slots.last_updated,
+               EXISTS (
+                   SELECT 1
+                   FROM reservations
+                   WHERE reservations.slot_id = parking_slots.slot_id
+                     AND reservations.expires_at > CURRENT_TIMESTAMP
+               ) AS is_reserved
         FROM parking_slots
         JOIN sections
             ON parking_slots.section_id = sections.section_id
