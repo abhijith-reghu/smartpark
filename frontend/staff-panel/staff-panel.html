@@ -302,7 +302,15 @@
             }
         }
 
-        loadSlots().catch(showError);
+                loadSlots().catch(showError);
+
+        setInterval(() => {
+            if (updating) return;
+
+            loadSlots()
+                .then(() => { message.hidden = true; })
+                .catch(showError);
+        }, 5000);
     </script>
 </body>
 </html>
