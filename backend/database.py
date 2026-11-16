@@ -1,8 +1,9 @@
 
+import os
 import sqlite3
 from pathlib import Path
 from config import DB_PATH
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash  # type: ignore[import-not-found]
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 SCHEMA_PATH = BASE_DIR / "database" / "schema.sql"
