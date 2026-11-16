@@ -448,12 +448,13 @@
                 description;
         }
 
-        async function getJSON(url) {
+        async function getJSON(url, method = "GET") {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 8000);
 
             try {
                 const response = await fetch(url, {
+                    method: method,
                     cache: "no-store",
                     signal: controller.signal
                 });
@@ -475,7 +476,7 @@
                     : "/api/recommendation";
 
                 const [rec, data] = await Promise.all([
-                    getJSON(recommendationUrl),
+                                        getJSON(recommendationUrl, driverMode ? "POST" : "GET"),
                     getJSON("/api/slots")
                 ]);
 

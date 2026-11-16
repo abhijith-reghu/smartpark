@@ -246,7 +246,7 @@ def update_slot(slot_code):
 
 # ---------- DRIVER RESERVATIONS ----------
 
-@app.route("/api/reserve", methods=["GET"])
+@app.route("/api/reserve", methods=["POST"])
 def reserve_slot():
     driver_id = session.get("driver_id")
 
