@@ -1,3 +1,4 @@
+import os
 import base64
 from datetime import datetime, timedelta
 from ipaddress import ip_address
@@ -153,7 +154,7 @@ def logout():
 def get_slots():
     conn = get_db_connection()
 
-       slots = conn.execute("""
+    slots = conn.execute("""
         SELECT parking_slots.slot_code,
                parking_slots.status,
                sections.name AS section,
@@ -423,4 +424,5 @@ def get_stats():
 
 
 if __name__ == "__main__":
+    port = int(os.enviorn.get("PORT", 10000))
     app.run(host="0.0.0.0", port=5000, debug=False)
