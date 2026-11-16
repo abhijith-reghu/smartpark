@@ -21,4 +21,4 @@ Python, Flask, SQLite, HTML, CSS, JavaScript
 2. Open a terminal in the `backend` folder and run: `python app.py`
 3. Open `http://127.0.0.1:5000/login` in your browser
 
-Demo login: `admin` / `admin123`
+Demo login: username `admin`. The password is set with the `ADMIN_PASSWORD` environment variable.
