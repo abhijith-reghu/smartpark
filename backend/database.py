@@ -55,7 +55,7 @@ def initialize_database():
         """INSERT OR IGNORE INTO staff
         (username, password_hash, full_name)
         VALUES (?, ?, ?)""",
-        ("admin", generate_password_hash("admin123"), "Test Admin")
+                       ("admin", generate_password_hash(os.environ.get("ADMIN_PASSWORD", "admin123")), "Test Admin")
     )
 
     conn.commit()
