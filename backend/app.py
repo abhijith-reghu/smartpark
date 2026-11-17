@@ -1,6 +1,6 @@
 import os
 import base64
-from datetime import datetime, timedelta
+import uuid
 from ipaddress import ip_address
 from urllib.parse import urlsplit
 
@@ -9,7 +9,6 @@ from qrcode.image.svg import SvgPathFillImage
 from pathlib import Path
 
 from flask import Flask, request, jsonify, session, render_template, redirect
-from flask_cors import CORS
 from config import SECRET_KEY
 from auth import verify_login, login_required
 from database import get_db_connection, initialize_database
@@ -19,8 +18,12 @@ from database import get_db_connection, initialize_database
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 app = Flask(__name__, template_folder=str(FRONTEND_DIR))
-CORS(app, supports_credentials=True)
 app.secret_key = SECRET_KEY
+# The pages are served by this same app, so no CORS is needed.
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+)
 initialize_database()
 
 #-----------new addedd----
@@ -116,9 +119,13 @@ def dashboard_page():
 
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_json(silent=True)
 
-    if not data or "username" not in data or "password" not in data:
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("username"), str)
+        or not isinstance(data.get("password"), str)
+    ):
         return jsonify({
             "success": False,
             "error": "username and password required"
@@ -144,7 +151,9 @@ def login():
 
 @app.route("/api/logout", methods=["POST"])
 def logout():
-    session.clear()
+    # Only remove staff data so a driver's reservation id is kept.
+    session.pop("staff_id", None)
+    session.pop("full_name", None)
     return jsonify({"success": True})
 
 
@@ -180,12 +189,11 @@ def get_slots():
 @app.route("/api/slots/<slot_code>/update", methods=["POST"])
 @login_required
 def update_slot(slot_code):
-    data = request.get_json()
+    data = request.get_json(silent=True)
 
     if (
-        not data
-        or "status" not in data
-        or data["status"] not in ("available", "occupied")
+        not isinstance(data, dict)
+        or data.get("status") not in ("available", "occupied")
     ):
         return jsonify({
             "success": False,
@@ -205,6 +213,15 @@ def update_slot(slot_code):
             "success": False,
             "error": f"slot_code '{slot_code}' not found"
         }), 404
+
+    # Nothing to do (and nothing to log) if the status is unchanged.
+    if slot["status"] == data["status"]:
+        conn.close()
+        return jsonify({
+            "success": True,
+            "slot_code": slot_code,
+            "status": data["status"]
+        })
 
     conn.execute(
         """
@@ -251,7 +268,6 @@ def reserve_slot():
     driver_id = session.get("driver_id")
 
     if not driver_id:
-        import uuid
         driver_id = str(uuid.uuid4())
         session["driver_id"] = driver_id
 
@@ -313,7 +329,8 @@ def reserve_slot():
               AND parking_slots.slot_id NOT IN (
                   SELECT slot_id FROM reservations
               )
-            ORDER BY parking_slots.distance_from_entrance ASC
+            ORDER BY parking_slots.distance_from_entrance ASC,
+                     parking_slots.slot_code ASC
             LIMIT 1
         """).fetchone()
 
@@ -378,7 +395,8 @@ def get_recommendation():
                 WHERE reservations.slot_id = parking_slots.slot_id
                   AND reservations.expires_at > CURRENT_TIMESTAMP
            )
-        ORDER BY parking_slots.distance_from_entrance ASC
+        ORDER BY parking_slots.distance_from_entrance ASC,
+                 parking_slots.slot_code ASC
         LIMIT 1
     """).fetchone()
 
@@ -405,12 +423,12 @@ def get_stats():
 
     counts = conn.execute("""
         SELECT COUNT(*) AS total,
-               SUM(
+               COALESCE(SUM(
                    CASE WHEN status = 'available' THEN 1 ELSE 0 END
-               ) AS available,
-               SUM(
+               ), 0) AS available,
+               COALESCE(SUM(
                    CASE WHEN status = 'occupied' THEN 1 ELSE 0 END
-               ) AS occupied
+               ), 0) AS occupied
         FROM parking_slots
     """).fetchone()
 
@@ -424,5 +442,6 @@ def get_stats():
 
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    port = int(os.environ.get("PORT", 5000))
+    # 0.0.0.0 lets phones on the same Wi-Fi reach the driver page (QR code).
+    app.run(host="0.0.0.0", port=port, debug=False)

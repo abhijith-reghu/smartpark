@@ -56,6 +56,10 @@
         button:hover {
             background-color: #2563eb;
         }
+        button:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
         #message {
             margin-top: 14px;
             font-size: 13px;
@@ -67,33 +71,48 @@
 
     <div class="login-box">
         <h1>SmartPark Staff Login</h1>
-        <input type="text" id="username" placeholder="Username">
-        <input type="password" id="password" placeholder="Password">
-        <button onclick="login()">Login</button>
-        <p id="message"></p>
+        <form id="loginForm">
+            <input type="text" id="username" placeholder="Username"
+                   autocomplete="username" required>
+            <input type="password" id="password" placeholder="Password"
+                   autocomplete="current-password" required>
+            <button type="submit" id="loginButton">Login</button>
+        </form>
+        <p id="message" role="alert"></p>
     </div>
 
     <script>
-        function login() {
-            const username = document.getElementById("username").value;
+        document.getElementById("loginForm").addEventListener("submit", login);
+
+        function login(event) {
+            event.preventDefault();
+
+            const button = document.getElementById("loginButton");
+            const message = document.getElementById("message");
+            const username = document.getElementById("username").value.trim();
             const password = document.getElementById("password").value;
 
-            fetch("api/login", {
+            message.textContent = "";
+            button.disabled = true;
+
+            fetch("/api/login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include",
+                credentials: "same-origin",
                 body: JSON.stringify({ username: username, password: password })
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    window.location.href = "../staff-panel";
+                    window.location.href = "/staff-panel";
                 } else {
-                    document.getElementById("message").innerText = data.error;
+                    message.textContent = data.error || "Login failed.";
+                    button.disabled = false;
                 }
             })
-            .catch(error => {
-                document.getElementById("message").innerText = "Could not connect to server.";
+            .catch(() => {
+                message.textContent = "Could not connect to server.";
+                button.disabled = false;
             });
         }
     </script>

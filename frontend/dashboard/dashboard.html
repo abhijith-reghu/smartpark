@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>SmartPark - Admin Dashboard</title>
     <style>
         body {
@@ -121,6 +122,12 @@
     </div>
 
     <script>
+        function escapeHTML(value) {
+            const div = document.createElement("div");
+            div.textContent = String(value);
+            return div.innerHTML;
+        }
+
         async function loadDashboard() {
             const errorBox = document.getElementById("dashboardError");
 
@@ -130,10 +137,6 @@
                     credentials: "same-origin"
                 });
 
-                if (response.status === 401) {
-                    window.location.replace("/login");
-                    return;
-                }
                 if (!response.ok) {
                     throw new Error("Could not load parking data. Please refresh.");
                 }
@@ -142,55 +145,56 @@
                 const slots = Array.isArray(data.slots) ? data.slots : [];
                 errorBox.hidden = true;
 
-            const total = slots.length;
-            const available = slots.filter(s => s.status === "available").length;
-            const occupied = total - available;
-            const percent = total > 0 ? Math.round((occupied / total) * 100) : 0;
+                const total = slots.length;
+                const available = slots.filter(s => s.status === "available").length;
+                const occupied = total - available;
+                const percent = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
-            document.getElementById("statsGrid").innerHTML = `
-                <div class="stat-card">
-                    <p class="stat-number">${total}</p>
-                    <p class="stat-label">Total Slots</p>
-                </div>
-                <div class="stat-card">
-                    <p class="stat-number" style="color:#4ade80;">${available}</p>
-                    <p class="stat-label">Available</p>
-                </div>
-                <div class="stat-card">
-                    <p class="stat-number" style="color:#f87171;">${occupied}</p>
-                    <p class="stat-label">Occupied</p>
-                </div>
-                <div class="stat-card">
-                    <p class="stat-number" style="color:#60a5fa;">${percent}%</p>
-                    <p class="stat-label">Occupancy</p>
-                </div>
-            `;
-
-            const sections = {};
-            slots.forEach(slot => {
-                if (!sections[slot.section]) {
-                    sections[slot.section] = { total: 0, available: 0 };
-                }
-                sections[slot.section].total++;
-                if (slot.status === "available") sections[slot.section].available++;
-            });
-
-            let breakdownHTML = "";
-            for (const name in sections) {
-                const sec = sections[name];
-                const secPercent = Math.round((sec.available / sec.total) * 100);
-                breakdownHTML += `
-                    <div class="section-card">
-                        <div>
-                            <p class="section-name">Section ${name}</p>
-                            <p class="section-stats">${sec.available} of ${sec.total} available</p>
-                        </div>
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width:${secPercent}%;"></div>
-                        </div>
+                document.getElementById("statsGrid").innerHTML = `
+                    <div class="stat-card">
+                        <p class="stat-number">${total}</p>
+                        <p class="stat-label">Total Slots</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-number" style="color:#4ade80;">${available}</p>
+                        <p class="stat-label">Available</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-number" style="color:#f87171;">${occupied}</p>
+                        <p class="stat-label">Occupied</p>
+                    </div>
+                    <div class="stat-card">
+                        <p class="stat-number" style="color:#60a5fa;">${percent}%</p>
+                        <p class="stat-label">Occupancy</p>
                     </div>
                 `;
-            }
+
+                const sections = {};
+                slots.forEach(slot => {
+                    if (!sections[slot.section]) {
+                        sections[slot.section] = { total: 0, available: 0 };
+                    }
+                    sections[slot.section].total++;
+                    if (slot.status === "available") sections[slot.section].available++;
+                });
+
+                let breakdownHTML = "";
+                for (const name in sections) {
+                    const sec = sections[name];
+                    const secPercent = Math.round((sec.available / sec.total) * 100);
+                    breakdownHTML += `
+                        <div class="section-card">
+                            <div>
+                                <p class="section-name">Section ${escapeHTML(name)}</p>
+                                <p class="section-stats">${sec.available} of ${sec.total} available</p>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width:${secPercent}%;"></div>
+                            </div>
+                        </div>
+                    `;
+                }
+
                 document.getElementById("sectionBreakdown").innerHTML =
                     breakdownHTML || "<p>No parking sections are configured.</p>";
             } catch (error) {

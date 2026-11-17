@@ -403,7 +403,11 @@
         </div>
 
         <p class="note">
+            {% if driver_mode %}
+            This slot is held for you for 10 minutes.
+            {% else %}
             Live guidance, not a reservation. Availability may change.
+            {% endif %}
             Follow the signs inside the parking area.
         </p>
     </main>
@@ -427,7 +431,7 @@
         function getDirection(value) {
             const key = String(value || "")
                 .toUpperCase()
-                .replace(/[\\s_-]/g, "");
+                .replace(/[\s_-]/g, "");
             return directions[key] || null;
         }
 

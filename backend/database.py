@@ -52,11 +52,17 @@ def initialize_database():
                 (f"{name}{n}", section_id, n)
             )
 
+    admin_password = os.environ.get("ADMIN_PASSWORD")
+    if not admin_password:
+        print("WARNING: ADMIN_PASSWORD is not set, using the demo password "
+              "'admin123'. Set ADMIN_PASSWORD before deploying.")
+        admin_password = "admin123"
+
     conn.execute(
         """INSERT OR IGNORE INTO staff
         (username, password_hash, full_name)
         VALUES (?, ?, ?)""",
-                       ("admin", generate_password_hash(os.environ.get("ADMIN_PASSWORD", "admin123")), "Test Admin")
+        ("admin", generate_password_hash(admin_password), "Test Admin")
     )
 
     conn.commit()

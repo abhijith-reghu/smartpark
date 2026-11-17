@@ -12,7 +12,7 @@ SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "schema.sql")
 
 def create_database():
     conn = sqlite3.connect(DB_PATH)
-    with open(SCHEMA_PATH, "r") as f:
+    with open(SCHEMA_PATH, "r", encoding="utf-8") as f:
         schema_sql = f.read()
     conn.executescript(schema_sql)
     conn.commit()

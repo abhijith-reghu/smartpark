@@ -46,8 +46,11 @@ def seed():
             (slot_code, section_id, distance),
         )
 
-    # Staff account for testing login (username: admin, password: admin123)
-    password_hash = generate_password_hash("admin123")
+    # Staff account (username: admin). Password comes from ADMIN_PASSWORD,
+    # or falls back to the demo password admin123.
+    password_hash = generate_password_hash(
+        os.environ.get("ADMIN_PASSWORD", "admin123")
+    )
     cur.execute(
         """INSERT OR IGNORE INTO staff (username, password_hash, full_name)
            VALUES (?, ?, ?)""",
@@ -56,7 +59,7 @@ def seed():
 
     conn.commit()
     conn.close()
-    print("Seed data inserted: 5 sections, 25 slots, 1 staff account (admin/admin123).")
+    print("Seed data inserted: 5 sections, 25 slots, 1 staff account (admin).")
 
 
 if __name__ == "__main__":
